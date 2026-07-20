@@ -2,6 +2,7 @@
 
 import { Award, Download, ExternalLink, Search, Share2, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { getUrls } from "@/lib/utils/geturl";
 
 interface EventPortalClientProps {
   event: {
@@ -207,7 +208,8 @@ export default function EventPortalClient({ event, ambassadorName }: EventPortal
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-2">
                 Registered Name
-              </label>
+              </label>fix error
+
               <input
                 type="text"
                 required
@@ -392,7 +394,7 @@ export default function EventPortalClient({ event, ambassadorName }: EventPortal
               >
                 <img
                   ref={imageRef}
-                  src={event.templateUrl}
+                  src={getUrls.getUrl(event.templateUrl)}
                   alt="Certificate Preview"
                   onLoad={handleImageLoad}
                   className="w-full h-auto pointer-events-none"

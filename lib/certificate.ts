@@ -60,14 +60,25 @@ export async function generateCertificatePdf(
   data: CertificateData
 ): Promise<Uint8Array> {
   // Read template image bytes
-  const imageBytes = fs.readFileSync(templatePath);
+  let imageBytes: Buffer | Uint8Array;
+  if (templatePath.startsWith("http://") || templatePath.startsWith("https://")) {
+    const response = await fetch(templatePath);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch template image from URL: ${templatePath}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    imageBytes = new Uint8Array(arrayBuffer);
+  } else {
+    imageBytes = fs.readFileSync(templatePath);
+  }
 
   // Create a new PDF document
   const pdfDoc = await PDFDocument.create();
 
   // Embed template image
   let image;
-  const ext = path.extname(templatePath).toLowerCase();
+  const cleanPath = templatePath.split("?")[0];
+  const ext = path.extname(cleanPath).toLowerCase();
   if (ext === ".jpg" || ext === ".jpeg") {
     image = await pdfDoc.embedJpg(imageBytes);
   } else {

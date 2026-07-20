@@ -1,6 +1,7 @@
 import { generateCertificatePdf } from "@/lib/certificate";
 import dbConnect from "@/lib/db";
 import { Certificate, Event, Participant, User } from "@/lib/models";
+import { resolveTemplateUrl } from "@/lib/utils/geturl";
 import fs from "fs";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
@@ -71,12 +72,21 @@ export async function GET(
         );
       }
 
-      const templatePath = path.join(process.cwd(), "public", event.templateUrl);
-      if (!fs.existsSync(templatePath)) {
-        return NextResponse.json(
-          { error: "Certificate template file not found on server" },
-          { status: 500 }
-        );
+      let templatePath = "";
+      if (
+        event.templateUrl.startsWith("http://") ||
+        event.templateUrl.startsWith("https://") ||
+        (!event.templateUrl.startsWith("/") && !event.templateUrl.startsWith("public"))
+      ) {
+        templatePath = resolveTemplateUrl(event.templateUrl);
+      } else {
+        templatePath = path.join(process.cwd(), "public", event.templateUrl);
+        if (!fs.existsSync(templatePath)) {
+          return NextResponse.json(
+            { error: "Certificate template file not found on server" },
+            { status: 500 }
+          );
+        }
       }
 
       // Increment download count
@@ -178,7 +188,7 @@ export async function GET(
         date: event.date,
         slug: event.slug,
         status: event.status,
-        templateUrl: event.templateUrl || "",
+        templateUrl: resolveTemplateUrl(event.templateUrl) || "",
         templateSettings: event.templateSettings || {},
         organizerName: organizer ? organizer.name : "N/A",
       },

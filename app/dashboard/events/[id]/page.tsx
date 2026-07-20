@@ -6,6 +6,7 @@ import { getOrganizerSession } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import { Certificate, Event, Participant, User } from "@/lib/models";
 import { redirect } from "next/navigation";
+import { resolveTemplateUrl } from "@/lib/utils/geturl";
 import EventDetailClient from "./EventDetailClient";
 
 export default async function EventDetailPage({
@@ -72,7 +73,7 @@ export default async function EventDetailPage({
     description: eventData.description || "",
     date: eventData.date ? eventData.date.toISOString() : null,
     slug: eventData.slug,
-    templateUrl: eventData.templateUrl || "",
+    templateUrl: resolveTemplateUrl(eventData.templateUrl),
     status: eventData.status,
     templateSettings: JSON.parse(JSON.stringify(eventData.templateSettings || {})),
     createdAt: eventData.createdAt.toISOString(),

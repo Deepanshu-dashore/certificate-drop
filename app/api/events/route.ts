@@ -1,6 +1,7 @@
 import { getOrganizerSession } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import { Certificate, Event, Participant, User } from "@/lib/models";
+import { resolveTemplateUrl } from "@/lib/utils/geturl";
 import { NextRequest, NextResponse } from "next/server";
 
 // Helper to generate a URL slug from the title
@@ -107,7 +108,10 @@ export async function POST(req: NextRequest) {
       status: "draft",
     });
 
-    return NextResponse.json({ success: true, event });
+    const eventObj = event.toObject();
+    eventObj.templateUrl = resolveTemplateUrl(eventObj.templateUrl);
+
+    return NextResponse.json({ success: true, event: eventObj });
   } catch (error: any) {
     console.error("POST /api/events error:", error);
     return NextResponse.json(

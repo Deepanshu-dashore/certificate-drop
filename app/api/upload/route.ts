@@ -1,9 +1,6 @@
-import fs from "fs";
+import { CloudneryService } from "@/lib/services/CloudneryService";
+import { resolveTemplateUrl } from "@/lib/utils/geturl";
 import { NextRequest, NextResponse } from "next/server";
-import path from "path";
-
-// Set directory for uploads inside the public folder
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,27 +11,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    // Ensure the uploads directory exists
-    if (!fs.existsSync(UPLOADS_DIR)) {
-      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    // Upload to Cloudinary
+    // Using folder name "certificate-templates" and resource_type "image"
+    const uploadResult = await CloudneryService.upload(file, "certificate-templates", "image");
+
+    if (!uploadResult) {
+      return NextResponse.json(
+        { error: "Failed to upload file to Cloudinary" },
+        { status: 500 }
+      );
     }
-
-    // Generate unique file name to avoid collision
-    const fileExtension = path.extname(file.name);
-    const uniqueFilename = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${fileExtension}`;
-    const filePath = path.join(UPLOADS_DIR, uniqueFilename);
-
-    // Write file to local disk
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    fs.writeFileSync(filePath, buffer);
-
-    // Return the public URL path
-    const fileUrl = `/uploads/${uniqueFilename}`;
 
     return NextResponse.json({
       success: true,
-      url: fileUrl,
+      url: uploadResult.url, // Storable partial URL (e.g. v1628172938/certificate-templates/abc.png)
       fileName: file.name,
     });
   } catch (error: any) {

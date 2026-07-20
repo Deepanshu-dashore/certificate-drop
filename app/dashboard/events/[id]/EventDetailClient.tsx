@@ -19,8 +19,8 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import { getUrls } from "@/lib/utils/geturl";
 import { useRouter } from "next/navigation";
 import Papa from "papaparse";
 import { useEffect, useRef, useState } from "react";
@@ -278,6 +278,35 @@ export default function EventDetailClient({
       router.refresh();
     } catch (err: any) {
       setUploadError(err.message || "Upload failed");
+    } finally {
+      setIsUploadingTemplate(false);
+    }
+  };
+
+  // Delete Template Image
+  const handleTemplateDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete the template background image?")) return;
+
+    setIsUploadingTemplate(true);
+    setUploadError(null);
+
+    try {
+      const res = await fetch(`/api/events/${event.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateUrl: "" }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete template");
+      }
+
+      setTemplateUrl("");
+      setIsImageLoaded(false); // trigger reload
+      router.refresh();
+    } catch (err: any) {
+      setUploadError(err.message || "Delete failed");
     } finally {
       setIsUploadingTemplate(false);
     }
@@ -671,16 +700,26 @@ export default function EventDetailClient({
                     <span className="text-sm font-bold text-slate-800 dark:text-zinc-300">
                       Live Certificate Preview ({naturalWidth}x{naturalHeight})
                     </span>
-                    <label className="text-xs text-blue-600 hover:text-blue-500 font-semibold cursor-pointer dark:text-blue-400">
-                      Change Template PNG
-                      <input
-                        type="file"
-                        accept="image/png"
-                        onChange={handleTemplateUpload}
+                    <div className="flex items-center gap-3">
+                      <label className="text-xs text-blue-600 hover:text-blue-500 font-semibold cursor-pointer dark:text-blue-400">
+                        Change Template PNG
+                        <input
+                          type="file"
+                          accept="image/png"
+                          onChange={handleTemplateUpload}
+                          disabled={isUploadingTemplate}
+                          className="hidden"
+                        />
+                      </label>
+                      <span className="text-slate-300 dark:text-zinc-700">|</span>
+                      <button
+                        onClick={handleTemplateDelete}
                         disabled={isUploadingTemplate}
-                        className="hidden"
-                      />
-                    </label>
+                        className="text-xs text-red-600 hover:text-red-500 font-semibold cursor-pointer"
+                      >
+                        Delete Template
+                      </button>
+                    </div>
                   </div>
 
                   <div
@@ -691,7 +730,7 @@ export default function EventDetailClient({
                     {/* Background Template */}
                     <img
                       ref={imageRef}
-                      src={templateUrl}
+                      src={getUrls.getUrl(templateUrl)}
                       alt="Certificate Template"
                       onLoad={handleImageLoad}
                       className="w-full h-auto pointer-events-none"

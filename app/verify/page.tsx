@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Home, Search, Share2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { getUrls } from "@/lib/utils/geturl";
 
 function VerifyContent() {
   const searchParams = useSearchParams();
@@ -353,7 +354,7 @@ function VerifyContent() {
               >
                 <img
                   ref={imageRef}
-                  src={result.event.templateUrl}
+                  src={getUrls.getUrl(result.event.templateUrl)}
                   alt="Certificate Preview"
                   onLoad={handleImageLoad}
                   className="w-full h-auto pointer-events-none"

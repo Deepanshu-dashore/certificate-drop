@@ -7,6 +7,7 @@ import { Event, User } from "@/lib/models";
 import { Award, Calendar, Home } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { resolveTemplateUrl } from "@/lib/utils/geturl";
 import EventPortalClient from "./EventPortalClient";
 
 export default async function EventPortalPage({
@@ -42,7 +43,7 @@ export default async function EventPortalPage({
     title: eventData.title,
     description: eventData.description || "",
     date: eventData.date ? eventData.date.toISOString() : null,
-    templateUrl: eventData.templateUrl || "",
+    templateUrl: resolveTemplateUrl(eventData.templateUrl),
     slug: eventData.slug,
   };
 
