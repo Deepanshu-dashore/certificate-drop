@@ -89,6 +89,7 @@ export default function EventDetailClient({
   const [participants, setParticipants] = useState<ParticipantItem[]>(initialParticipants);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedParticipantId, setCopiedParticipantId] = useState<string | null>(null);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
 
   // Edit Participant State
   const [editingParticipant, setEditingParticipant] = useState<ParticipantItem | null>(null);
@@ -605,6 +606,29 @@ export default function EventDetailClient({
     navigator.clipboard.writeText(text);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const copyShareMessage = (p: ParticipantItem) => {
+    const downloadLink = `${window.location.protocol}//${window.location.host}/api/certificates/${p.certificateCode}?download=true&email=${encodeURIComponent(p.email)}&nameOrRegId=${encodeURIComponent(p.name)}&gid=${encodeURIComponent(p.registrationId || "")}`;
+    
+    const message = `Hello!
+
+Thank you for participating in the **${event.title} Ambassador Program**.
+
+Your personalized Ambassador Certificate is now available.
+
+**Event:** ${event.title}
+**Ambassador:** ${p.name}
+**GID:** ${p.registrationId || "N/A"}
+**Certificate ID:** ${p.certificateCode || "N/A"}
+
+📥 **Download Certificate:** ${downloadLink}
+
+Thank you for being a valued Ambassador. We appreciate your contribution and look forward to your continued participation!`;
+
+    navigator.clipboard.writeText(message);
+    setCopiedMessageId(p.id);
+    setTimeout(() => setCopiedMessageId(null), 2000);
   };
 
   const getPublicEventUrl = () => {
@@ -1545,6 +1569,14 @@ export default function EventDetailClient({
                                 >
                                   Edit
                                 </button>
+                                <span className="text-slate-300 dark:text-zinc-700">|</span>
+                                <button
+                                  onClick={() => copyShareMessage(p)}
+                                  title="Copy share message filled with participant details"
+                                  className="text-xs text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 font-semibold cursor-pointer"
+                                >
+                                  {copiedMessageId === p.id ? "Copied Message!" : "Copy Msg"}
+                                </button>
                               </div>
                             )}
                           </td>
@@ -1701,10 +1733,55 @@ export default function EventDetailClient({
                       </div>
 
                       {copiedLink && (
-                        <p className="text-center text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                          ✓ Link copied to clipboard
+                        <p className="text-center text-xs text-emerald-650 dark:text-emerald-400 font-medium">
+                          ✓ Copied successfully
                         </p>
                       )}
+
+                      <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-zinc-800">
+                        <label className="block text-[10px] font-bold text-slate-550 dark:text-zinc-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                          <span>Share Message Template</span>
+                          <button
+                            onClick={() => {
+                              const template = `Hello!
+
+Thank you for participating in the **${event.title} Ambassador Program**.
+
+Your personalized Ambassador Certificate is now available.
+
+**Event:** ${event.title}
+**Ambassador:** {Ambassador Name}
+**GID:** {GID}
+**Certificate ID:** {Certificate ID}
+
+📥 **Download Certificate:** {Download Link}
+
+Thank you for being a valued Ambassador. We appreciate your contribution and look forward to your continued participation!`;
+                              copyToClipboard(template);
+                            }}
+                            title="Copy message template to clipboard"
+                            className="text-[10px] text-blue-600 hover:text-blue-500 dark:text-blue-400 font-semibold cursor-pointer"
+                          >
+                            Copy Template
+                          </button>
+                        </label>
+                        <pre className="text-[10px] leading-relaxed text-slate-500 dark:text-zinc-400 font-sans whitespace-pre-wrap select-all max-h-32 overflow-y-auto pr-1">
+{`Hello!
+
+Thank you for participating in the **${event.title} Ambassador Program**.
+
+Your personalized Ambassador Certificate is now available.
+
+**Event:** ${event.title}
+**Ambassador:** {Ambassador Name}
+**GID:** {GID}
+**Certificate ID:** {Certificate ID}
+
+📥 **Download Certificate:** {Download Link}
+
+Thank you for being a valued Ambassador. We appreciate your contribution and look forward to your continued participation!`}
+                        </pre>
+                      </div>
 
                       <Link
                         href={`/e/${event.slug}${organizerGid ? `?gid=${encodeURIComponent(organizerGid)}` : ""}`}
