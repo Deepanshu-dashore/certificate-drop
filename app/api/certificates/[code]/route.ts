@@ -46,14 +46,14 @@ export async function GET(
     }
 
     const cleanEmail = emailParam.trim().toLowerCase();
-    const cleanNameOrRegId = nameOrRegIdParam.trim().toLowerCase();
+    const cleanNameOrRegId = nameOrRegIdParam.trim().replace(/\s+/g, " ").toLowerCase();
     const cleanGid = gidParam ? gidParam.trim().toLowerCase() : "";
 
     const isEmailMatch = participant.email.trim().toLowerCase() === cleanEmail;
-    const isNameMatch = participant.name.trim().toLowerCase() === cleanNameOrRegId;
+    const isNameMatch = participant.name.trim().replace(/\s+/g, " ").toLowerCase() === cleanNameOrRegId;
     const isRegIdMatch = participant.registrationId && (
-      participant.registrationId.trim().toLowerCase() === cleanNameOrRegId ||
-      participant.registrationId.trim().toLowerCase() === cleanGid
+      participant.registrationId.trim().replace(/\s+/g, " ").toLowerCase() === cleanNameOrRegId ||
+      participant.registrationId.trim().replace(/\s+/g, " ").toLowerCase() === cleanGid
     );
 
     if (!isEmailMatch || (!isNameMatch && !isRegIdMatch)) {

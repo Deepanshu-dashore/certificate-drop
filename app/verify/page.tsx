@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Home, Search, Share2, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, Home, Search, Share2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getUrls } from "@/lib/utils/geturl";
@@ -304,6 +304,14 @@ function VerifyContent() {
               <div className="flex justify-between py-1">
                 <span className="text-slate-500 dark:text-zinc-400">Downloads count</span>
                 <span className="font-semibold text-slate-900 dark:text-zinc-100">{result.downloadCount} downloads</span>
+              </div>
+            </div>
+
+            {/* Warning Alert */}
+            <div className="mt-6 rounded-xl bg-amber-50/50 p-4 border border-amber-100 dark:bg-amber-950/10 dark:border-amber-900/30 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-850 dark:text-amber-300">
+                <span className="font-semibold">Notice:</span> Please check your downloaded certificate PDF. If you notice any formatting or detail issues with the PDF, please coordinate with your Ambassador.
               </div>
             </div>
           </div>

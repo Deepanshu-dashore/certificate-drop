@@ -21,6 +21,8 @@ export default function EventPortalClient({ event, ambassadorName }: EventPortal
   const [email, setEmail] = useState("");
   const [registrationId, setRegistrationId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showCertCodeInput, setShowCertCodeInput] = useState(false);
+  const [certCodeInput, setCertCodeInput] = useState("");
   const [result, setResult] = useState<{
     participant: {
       name: string;
@@ -109,9 +111,16 @@ export default function EventPortalClient({ event, ambassadorName }: EventPortal
       const urlEmail = params.get("email") || "";
       const urlCertId = params.get("certificateId") || params.get("code") || params.get("id") || "";
 
-      if (urlRegId) setRegistrationId(urlRegId);
+      if (urlRegId) {
+        setRegistrationId(urlRegId);
+        setShowCertCodeInput(true);
+      }
       if (urlName) setName(urlName);
       if (urlEmail) setEmail(urlEmail);
+      if (urlCertId) {
+        setCertCodeInput(urlCertId);
+        setShowCertCodeInput(true);
+      }
 
       if (urlCertId.trim() && urlEmail.trim() && (urlName.trim() || urlRegId.trim())) {
         fetchCertificateByCode(urlCertId, urlEmail, urlName.trim() || urlRegId.trim());
@@ -132,8 +141,13 @@ export default function EventPortalClient({ event, ambassadorName }: EventPortal
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !registrationId.trim()) return;
-    await searchCertificate(name, email, registrationId);
+    if (showCertCodeInput) {
+      if (!name.trim() || !email.trim() || !certCodeInput.trim()) return;
+      await fetchCertificateByCode(certCodeInput, email, name);
+    } else {
+      if (!name.trim() || !email.trim() || !registrationId.trim()) return;
+      await searchCertificate(name, email, registrationId);
+    }
   };
 
   const updatePreviewSize = () => {
@@ -208,7 +222,7 @@ export default function EventPortalClient({ event, ambassadorName }: EventPortal
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-2">
                 Registered Name
-              </label>fix error
+              </label>
 
               <input
                 type="text"
@@ -234,24 +248,45 @@ export default function EventPortalClient({ event, ambassadorName }: EventPortal
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-2">
-                GID of Ambassador
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. REG-1234"
-                value={registrationId}
-                onChange={(e) => setRegistrationId(e.target.value)}
-                className="block w-full rounded-xl border border-slate-200 bg-white py-3 px-4 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-              />
-            </div>
+            {showCertCodeInput ? (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-2">
+                  Certificate ID
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. CD-RVJO-MOO6"
+                  value={certCodeInput}
+                  onChange={(e) => setCertCodeInput(e.target.value)}
+                  className="block w-full rounded-xl border border-slate-200 bg-white py-3 px-4 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 font-mono"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-2">
+                  GID of Ambassador
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. REG-1234"
+                  value={registrationId}
+                  onChange={(e) => setRegistrationId(e.target.value)}
+                  className="block w-full rounded-xl border border-slate-200 bg-white py-3 px-4 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                />
+              </div>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={isLoading || !name.trim() || !email.trim() || !registrationId.trim()}
+            disabled={
+              isLoading ||
+              !name.trim() ||
+              !email.trim() ||
+              (showCertCodeInput ? !certCodeInput.trim() : !registrationId.trim())
+            }
             className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-blue-500 disabled:opacity-55 cursor-pointer disabled:cursor-not-allowed transition-all"
           >
             {isLoading ? (

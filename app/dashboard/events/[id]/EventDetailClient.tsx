@@ -90,6 +90,15 @@ export default function EventDetailClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedParticipantId, setCopiedParticipantId] = useState<string | null>(null);
 
+  // Edit Participant State
+  const [editingParticipant, setEditingParticipant] = useState<ParticipantItem | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editCollege, setEditCollege] = useState("");
+  const [editRegId, setEditRegId] = useState("");
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
   // Event Details State
   const [title, setTitle] = useState(event.title);
   const [description, setDescription] = useState(event.description);
@@ -414,6 +423,67 @@ export default function EventDetailClient({
       setManualError(err.message || "An error occurred");
     } finally {
       setIsManualSubmitting(false);
+    }
+  };
+
+  const handleStartEdit = (p: ParticipantItem) => {
+    setEditingParticipant(p);
+    setEditName(p.name);
+    setEditEmail(p.email);
+    setEditCollege(p.college);
+    setEditRegId(p.registrationId || "");
+    setEditError(null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingParticipant) return;
+    if (!editName.trim() || !editEmail.trim() || !editCollege.trim()) {
+      setEditError("Name, Email, and College are required");
+      return;
+    }
+
+    setIsEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      const res = await fetch(`/api/events/${event.id}/participants`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          participantId: editingParticipant.id,
+          name: editName.trim(),
+          email: editEmail.trim().toLowerCase(),
+          college: editCollege.trim(),
+          registrationId: editRegId.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update participant");
+      }
+
+      setParticipants((prev) =>
+        prev.map((item) =>
+          item.id === editingParticipant.id
+            ? {
+                ...item,
+                name: editName.trim(),
+                email: editEmail.trim().toLowerCase(),
+                college: editCollege.trim(),
+                registrationId: editRegId.trim(),
+              }
+            : item
+        )
+      );
+
+      setEditingParticipant(null);
+      router.refresh();
+    } catch (err: any) {
+      setEditError(err.message || "An error occurred");
+    } finally {
+      setIsEditSubmitting(false);
     }
   };
 
@@ -1342,32 +1412,18 @@ export default function EventDetailClient({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-555 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                        College / Institution
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Stanford University"
-                        value={manualCollege}
-                        onChange={(e) => setManualCollege(e.target.value)}
-                        className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-555 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                        GID of Ambassador (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. GDG-1002"
-                        value={manualRegId}
-                        onChange={(e) => setManualRegId(e.target.value)}
-                        className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-555 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                      College / Institution
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Stanford University"
+                      value={manualCollege}
+                      onChange={(e) => setManualCollege(e.target.value)}
+                      className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                    />
                   </div>
 
                   <div className="pt-2">
@@ -1481,6 +1537,13 @@ export default function EventDetailClient({
                                   className="text-xs text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 font-semibold cursor-pointer"
                                 >
                                   {copiedParticipantId === p.id ? "Copied!" : "Copy Link"}
+                                </button>
+                                <span className="text-slate-300 dark:text-zinc-700">|</span>
+                                <button
+                                  onClick={() => handleStartEdit(p)}
+                                  className="text-xs text-blue-600 hover:text-blue-500 dark:text-blue-400 font-semibold cursor-pointer"
+                                >
+                                  Edit
                                 </button>
                               </div>
                             )}
@@ -1659,6 +1722,96 @@ export default function EventDetailClient({
           </div>
         )}
       </main>
+      {/* Edit Participant Modal */}
+      {editingParticipant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-slate-100 dark:bg-zinc-900 dark:border-zinc-800">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-50">
+              Edit Participant Details
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
+              Update name, email, college, and registration ID.
+            </p>
+
+            <form onSubmit={handleSaveEdit} className="mt-6 space-y-4">
+              {editError && (
+                <div className="rounded-xl bg-red-50 p-3 text-xs text-red-750 dark:bg-red-950/20 dark:text-red-400 border border-red-100 dark:border-red-900/30">
+                  {editError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-555 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-555 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-555 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                    College / Institution
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editCollege}
+                    onChange={(e) => setEditCollege(e.target.value)}
+                    className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-555 dark:text-zinc-400 uppercase tracking-wider mb-1">
+                    GID / Reg ID
+                  </label>
+                  <input
+                    type="text"
+                    value={editRegId}
+                    onChange={(e) => setEditRegId(e.target.value)}
+                    className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3 border-t border-slate-100 dark:border-zinc-800">
+                <button
+                  type="submit"
+                  disabled={isEditSubmitting || !editName || !editEmail || !editCollege}
+                  className="flex-1 flex items-center justify-center rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-blue-500 disabled:opacity-50 transition-colors"
+                >
+                  {isEditSubmitting ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingParticipant(null)}
+                  className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

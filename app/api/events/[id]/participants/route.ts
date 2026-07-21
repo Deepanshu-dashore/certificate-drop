@@ -189,3 +189,75 @@ export async function GET(
     );
   }
 }
+
+// PUT: Update a single participant details
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getOrganizerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id: eventId } = await params;
+    const body = await req.json();
+    const { participantId, name, email, college, registrationId } = body;
+
+    if (!participantId || !name || !email || !college) {
+      return NextResponse.json(
+        { error: "Participant ID, name, email, and college are required" },
+        { status: 400 }
+      );
+    }
+
+    await dbConnect();
+
+    // Verify event ownership
+    const event = await Event.findOne({
+      _id: eventId,
+      organizerId: session.userId,
+    });
+
+    if (!event) {
+      return NextResponse.json({ error: "Event not found or unauthorized" }, { status: 404 });
+    }
+
+    // Check if participant exists
+    const participant = await Participant.findOne({ _id: participantId, eventId });
+    if (!participant) {
+      return NextResponse.json({ error: "Participant not found" }, { status: 404 });
+    }
+
+    // Check if email belongs to another participant in the same event
+    const cleanEmail = email.trim().toLowerCase();
+    const duplicate = await Participant.findOne({
+      eventId,
+      email: cleanEmail,
+      _id: { $ne: participantId }
+    });
+
+    if (duplicate) {
+      return NextResponse.json(
+        { error: "Another participant with this email is already registered for this event." },
+        { status: 400 }
+      );
+    }
+
+    // Update details
+    participant.name = name.trim();
+    participant.email = cleanEmail;
+    participant.college = college.trim();
+    participant.registrationId = registrationId ? registrationId.trim() : participant.registrationId;
+    await participant.save();
+
+    return NextResponse.json({ success: true, participant });
+  } catch (error: any) {
+    console.error("PUT /api/events/[id]/participants error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error: " + error.message },
+      { status: 500 }
+    );
+  }
+}

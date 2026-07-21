@@ -33,20 +33,23 @@ export async function GET(
         matchCriteria.email = emailParam.trim().toLowerCase();
       }
       if (nameParam) {
-        matchCriteria.name = { $regex: new RegExp(`^${nameParam.trim()}$`, "i") };
+        const escapedName = nameParam.trim().replace(/[-[\]{}()*+?.,\\^$|#]/g, '\\$&').replace(/\s+/g, '\\s+');
+        matchCriteria.name = { $regex: new RegExp(`^${escapedName}$`, "i") };
       }
       if (regIdParam) {
-        matchCriteria.registrationId = { $regex: new RegExp(`^${regIdParam.trim()}$`, "i") };
+        const escapedRegId = regIdParam.trim().replace(/[-[\]{}()*+?.,\\^$|#]/g, '\\$&').replace(/\s+/g, '\\s+');
+        matchCriteria.registrationId = { $regex: new RegExp(`^${escapedRegId}$`, "i") };
       }
       participant = await Participant.findOne(matchCriteria);
     } else if (query) {
       const trimmedQuery = query.trim();
+      const escapedQuery = trimmedQuery.replace(/[-[\]{}()*+?.,\\^$|#]/g, '\\$&').replace(/\s+/g, '\\s+');
       participant = await Participant.findOne({
         eventId,
         $or: [
           { email: trimmedQuery.toLowerCase() },
-          { name: { $regex: new RegExp(`^${trimmedQuery}$`, "i") } },
-          { registrationId: { $regex: new RegExp(`^${trimmedQuery}$`, "i") } },
+          { name: { $regex: new RegExp(`^${escapedQuery}$`, "i") } },
+          { registrationId: { $regex: new RegExp(`^${escapedQuery}$`, "i") } },
         ],
       });
     } else {

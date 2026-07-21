@@ -65,6 +65,13 @@ export default function DashboardClient({
   const [gidSuccess, setGidSuccess] = useState<string | null>(null);
   const [gidError, setGidError] = useState<string | null>(null);
 
+  // Change Password States
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
   const handleSaveGid = async () => {
     setIsSavingGid(true);
     setGidSuccess(null);
@@ -85,6 +92,34 @@ export default function DashboardClient({
       setGidError(err.message || "An unexpected error occurred");
     } finally {
       setIsSavingGid(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!oldPassword || !newPassword) return;
+
+    setIsUpdatingPassword(true);
+    setPasswordSuccess(null);
+    setPasswordError(null);
+
+    try {
+      const res = await fetch("/api/auth/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update password");
+      }
+      setPasswordSuccess("Password updated successfully!");
+      setOldPassword("");
+      setNewPassword("");
+    } catch (err: any) {
+      setPasswordError(err.message || "An unexpected error occurred");
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -263,55 +298,118 @@ export default function DashboardClient({
           </div>
         </div>
 
-        {/* Google Ambassador GID Profile Banner */}
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
-                <Award className="h-6 w-6" />
+        {/* Settings row (Ambassador Profile + Change Password) */}
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          {/* Google Ambassador GID Profile Banner */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col justify-between">
+            <div>
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                  <Award className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-md font-bold text-slate-900 dark:text-zinc-50 flex flex-wrap items-center gap-2">
+                    Developer Ambassador GID
+                    {session.gid && (
+                      <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/50 px-2.5 py-0.5 text-[10px] font-semibold text-blue-800 dark:text-blue-300">
+                        Active: {session.gid}
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                    Manage your Ambassador GID to automatically verify referred event participants.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-md font-bold text-slate-900 dark:text-zinc-50 flex items-center gap-2">
-                  Google Developer Ambassador Profile
-                  {session.gid && (
-                    <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/50 px-2.5 py-0.5 text-[10px] font-semibold text-blue-800 dark:text-blue-300">
-                      Active: {session.gid}
-                    </span>
-                  )}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
-                  Manage your Ambassador GID and certification credentials.
-                </p>
+
+              <div className="mt-6 flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter GID (e.g. GID-98765)"
+                  value={ambassadorGid}
+                  onChange={(e) => setAmbassadorGid(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                />
+                <button
+                  onClick={handleSaveGid}
+                  disabled={isSavingGid}
+                  className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 px-4 py-2 text-xs font-semibold transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
+                >
+                  {isSavingGid ? "Saving..." : "Save GID"}
+                </button>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <input
-                type="text"
-                placeholder="Enter GID (e.g. GID-98765)"
-                value={ambassadorGid}
-                onChange={(e) => setAmbassadorGid(e.target.value)}
-                className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-              />
-              <button
-                onClick={handleSaveGid}
-                disabled={isSavingGid}
-                className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 px-4 py-2 text-xs font-semibold transition-colors shrink-0 disabled:opacity-50"
-              >
-                {isSavingGid ? "Saving..." : "Save GID"}
-              </button>
+            <div className="min-h-[24px]">
+              {gidSuccess && (
+                <p className="mt-3 text-xs font-medium text-green-650 dark:text-green-400">
+                  {gidSuccess}
+                </p>
+              )}
+              {gidError && (
+                <p className="mt-3 text-xs font-medium text-red-650 dark:text-red-400">
+                  {gidError}
+                </p>
+              )}
             </div>
           </div>
-          {gidSuccess && (
-            <p className="mt-2 text-xs font-medium text-green-600 dark:text-green-400">
-              {gidSuccess}
-            </p>
-          )}
-          {gidError && (
-            <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-450">
-              {gidError}
-            </p>
-          )}
+
+          {/* Change Password Card */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex flex-col justify-between">
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300">
+                  <ShieldCheck className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-md font-bold text-slate-900 dark:text-zinc-50">
+                    Change Account Password
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                    Keep your account secure by updating your access password.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <input
+                  type="password"
+                  required
+                  placeholder="Old Password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                />
+                <input
+                  type="password"
+                  required
+                  placeholder="New Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isUpdatingPassword || !oldPassword || !newPassword}
+                className="w-full rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 py-2 text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {isUpdatingPassword ? "Updating..." : "Update Password"}
+              </button>
+            </form>
+            <div className="min-h-[24px]">
+              {passwordSuccess && (
+                <p className="mt-3 text-xs font-medium text-green-650 dark:text-green-400">
+                  {passwordSuccess}
+                </p>
+              )}
+              {passwordError && (
+                <p className="mt-3 text-xs font-medium text-red-650 dark:text-red-400">
+                  {passwordError}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Section header */}
